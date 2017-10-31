@@ -7,6 +7,7 @@ var cosine = require('wink-distance').bow.cosine;
 const report_folder = 'reports/mescaline';
 const nb_topics = 10;
 const nb_terms = 5;
+const min_weight = 0.7;
 const output_file = 'graph.json';
 
 /**
@@ -62,12 +63,20 @@ readFiles( report_folder )
     var ldaResults = lda(files.map(item => item.contents), nb_topics, nb_terms);
     var graph = {
       nodes: ldaResults.theta.map((theta, index) => {
-        return {id: index, metadata: {theta: theta}};
+        return {
+          id: 'n' + index,
+          label: 'n' + index,
+          x: Math.random(),
+          y: Math.random(),
+          size: 1,
+          metadata: {theta: theta},
+        };
       }),
       edges: []
     }
 
     let cosineNodes = graph.nodes;
+    let edge_id = 0;
 
     graph.nodes.forEach(nodeA => {
 
@@ -76,26 +85,32 @@ readFiles( report_folder )
 
       cosineNodes.forEach(nodeB => {
 
-        graph.edges.push({
-          source: nodeA.id,
-          target: nodeB.id,
-          weight: cosine(
-            nodeA.metadata.theta.reduce(function(result, theta, index) {
-              result['topic' + index] = theta;
-              return result;
-            }, {}),
-            nodeB.metadata.theta.reduce(function(result, theta, index) {
-              result['topic' + index] = theta;
-              return result;
-            }, {})
-          )
-        });
+        const weight = cosine(
+          nodeA.metadata.theta.reduce(function(result, theta, index) {
+            result['topic' + index] = theta;
+            return result;
+          }, {}),
+          nodeB.metadata.theta.reduce(function(result, theta, index) {
+            result['topic' + index] = theta;
+            return result;
+          }, {})
+        );
+
+
+        if(weight > min_weight) {
+          edge_id += 1;
+          graph.edges.push({
+            id: 'e' + edge_id,
+            source: nodeA.id,
+            target: nodeB.id,
+          });
+        }
 
       });
 
     });
 
-    fs.writeFile(ouput_file, JSON.stringify(graph));
+    fs.writeFile(output_file, JSON.stringify(graph, null, 2));
 })
 .catch( error => {
     console.log( error );

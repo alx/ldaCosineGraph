@@ -7,8 +7,9 @@ var cosine = require('wink-distance').bow.cosine;
 const report_folder = 'reports/mescaline';
 const nb_topics = 10;
 const nb_terms = 5;
+// set to -1 to output all edges
 const min_weight = 0.7;
-const output_file = 'graph.json';
+const output_file = 'output/graph.json';
 
 /**
  * Promise all

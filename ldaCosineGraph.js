@@ -4,13 +4,6 @@ var lda = require('lda');
 var nlp = require('wink-nlp-utils');
 var cosine = require('wink-distance').bow.cosine;
 
-const report_folder = 'reports/mescaline';
-const nb_topics = 12;
-const nb_terms = 20;
-// set to -1 to output all edges
-const min_weight = -1;
-const output_file = 'output/mescaline.json';
-
 /**
  * Promise all
  * @author Loreto Parisi (loretoparisi at gmail dot com)
@@ -57,66 +50,88 @@ function readFiles(dirname) {
   });
 }
 
-readFiles( report_folder )
-.then(files => {
-    console.log( "loaded ", files.length );
+function buildGraph(product_name) {
 
-    const fileContent = files.filter(item => item.contents.length > 0).map(item => item.contents);
-    var ldaResults = lda(fileContent, nb_topics, nb_terms);
-    console.log(ldaResults.result);
-    var graph = {
-      nodes: ldaResults.theta.map((theta, index) => {
-        return {
-          id: 'n' + index,
-          label: 'n' + index,
-          x: Math.random(),
-          y: Math.random(),
-          size: 1,
-          metadata: {theta: theta},
-        };
-      }),
-      edges: [],
-      topics: ldaResults.result
-    }
+  const report_folder = 'reports/' + product_name;
+  const nb_topics = 12;
+  const nb_terms = 20;
+  // set to -1 to output all edges
+  const min_weight = -1;
+  const output_file = 'output/' + product_name + '.json';
 
-    let cosineNodes = graph.nodes;
-    let edge_id = 0;
+  readFiles( report_folder )
+  .then(files => {
+      console.log( product_name + " - " + files.length  + " files loaded" );
 
-    graph.nodes.forEach(nodeA => {
+      const fileContent = files.filter(item => item.contents.length > 0).map(item => item.contents);
+      var ldaResults = lda(fileContent, nb_topics, nb_terms);
+      var graph = {
+        nodes: ldaResults.theta.map((theta, index) => {
+          return {
+            id: 'n' + index,
+            label: 'n' + index,
+            x: Math.random(),
+            y: Math.random(),
+            size: 1,
+            metadata: {theta: theta},
+          };
+        }),
+        edges: [],
+        topics: ldaResults.result
+      }
 
-      // Remove node on each pass
-      cosineNodes = cosineNodes.filter(nodeB => nodeA.id != nodeB.id);
+      let cosineNodes = graph.nodes;
+      let edge_id = 0;
 
-      cosineNodes.forEach(nodeB => {
+      graph.nodes.forEach(nodeA => {
 
-        const weight = cosine(
-          nodeA.metadata.theta.reduce(function(result, theta, index) {
-            result['topic' + index] = theta;
-            return result;
-          }, {}),
-          nodeB.metadata.theta.reduce(function(result, theta, index) {
-            result['topic' + index] = theta;
-            return result;
-          }, {})
-        );
+        // Remove node on each pass
+        cosineNodes = cosineNodes.filter(nodeB => nodeA.id != nodeB.id);
+
+        cosineNodes.forEach(nodeB => {
+
+          const weight = cosine(
+            nodeA.metadata.theta.reduce(function(result, theta, index) {
+              result['topic' + index] = theta;
+              return result;
+            }, {}),
+            nodeB.metadata.theta.reduce(function(result, theta, index) {
+              result['topic' + index] = theta;
+              return result;
+            }, {})
+          );
 
 
-        if(weight > min_weight) {
-          edge_id += 1;
-          graph.edges.push({
-            id: 'e' + edge_id,
-            source: nodeA.id,
-            target: nodeB.id,
-            weight: weight,
-          });
-        }
+          if(weight > min_weight) {
+            edge_id += 1;
+            graph.edges.push({
+              id: 'e' + edge_id,
+              source: nodeA.id,
+              target: nodeB.id,
+              weight: weight,
+            });
+          }
+
+        });
 
       });
 
-    });
+      fs.writeFile(output_file, JSON.stringify(graph, null, 2));
+  })
+  .catch( error => {
+      console.log( error );
+  });
 
-    fs.writeFile(output_file, JSON.stringify(graph, null, 2));
+}
+
+fs.readdir('reports', function (err, files) {
+  if (err) {
+    throw err;
+  }
+
+  files.filter(function (file) {
+    return fs.statSync('reports/' + file).isDirectory();
+  }).forEach(function (file) {
+    buildGraph(file);
+  });
 })
-.catch( error => {
-    console.log( error );
-});

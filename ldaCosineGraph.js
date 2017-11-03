@@ -61,64 +61,65 @@ function buildGraph(product_name) {
 
   readFiles( report_folder )
   .then(files => {
-      console.log( product_name + " - " + files.length  + " files loaded" );
 
-      const fileContent = files.filter(item => item.contents.length > 0).map(item => item.contents);
-      var ldaResults = lda(fileContent, nb_topics, nb_terms);
-      var graph = {
-        nodes: ldaResults.theta.map((theta, index) => {
-          return {
-            id: 'n' + index,
-            label: files[index].filename,
-            x: Math.random(),
-            y: Math.random(),
-            size: files[index].contents.length,
-            metadata: {
-              theta: theta,
-            },
-          };
-        }),
-        edges: [],
-        topics: ldaResults.result
-      }
+    console.log( product_name + " - " + files.length  + " files loaded" );
 
-      let cosineNodes = graph.nodes;
-      let edge_id = 0;
+    const fileContent = files.filter(item => item.contents.length > 0).map(item => item.contents);
+    var ldaResults = lda(fileContent, nb_topics, nb_terms);
+    var graph = {
+      nodes: ldaResults.theta.map((theta, index) => {
+        return {
+          id: 'n' + index,
+          label: files[index].filename,
+          x: Math.random(),
+          y: Math.random(),
+          size: files[index].contents.length,
+          metadata: {
+            theta: theta,
+          },
+        };
+      }),
+      edges: [],
+      topics: ldaResults.result
+    }
 
-      graph.nodes.forEach(nodeA => {
+    let cosineNodes = graph.nodes;
+    let edge_id = 0;
 
-        // Remove node on each pass
-        cosineNodes = cosineNodes.filter(nodeB => nodeA.id != nodeB.id);
+    graph.nodes.forEach(nodeA => {
 
-        cosineNodes.forEach(nodeB => {
+      // Remove node on each pass
+      cosineNodes = cosineNodes.filter(nodeB => nodeA.id != nodeB.id);
 
-          const weight = cosine(
-            nodeA.metadata.theta.reduce(function(result, theta, index) {
-              result['topic' + index] = theta;
-              return result;
-            }, {}),
-            nodeB.metadata.theta.reduce(function(result, theta, index) {
-              result['topic' + index] = theta;
-              return result;
-            }, {})
-          );
+      cosineNodes.forEach(nodeB => {
+
+        const weight = cosine(
+          nodeA.metadata.theta.reduce(function(result, theta, index) {
+            result['topic' + index] = theta;
+            return result;
+          }, {}),
+          nodeB.metadata.theta.reduce(function(result, theta, index) {
+            result['topic' + index] = theta;
+            return result;
+          }, {})
+        );
 
 
-          if(weight > min_weight) {
-            edge_id += 1;
-            graph.edges.push({
-              id: 'e' + edge_id,
-              source: nodeA.id,
-              target: nodeB.id,
-              weight: weight,
-            });
-          }
-
-        });
+        if(weight > min_weight) {
+          edge_id += 1;
+          graph.edges.push({
+            id: 'e' + edge_id,
+            source: nodeA.id,
+            target: nodeB.id,
+            weight: weight,
+          });
+        }
 
       });
 
-      fs.writeFile(output_file, JSON.stringify(graph, null, 2));
+    });
+
+    fs.writeFile(output_file, JSON.stringify(graph, null, 2));
   })
   .catch( error => {
       console.log( error );

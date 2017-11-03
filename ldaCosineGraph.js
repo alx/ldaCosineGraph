@@ -61,7 +61,8 @@ readFiles( report_folder )
 .then(files => {
     console.log( "loaded ", files.length );
 
-    var ldaResults = lda(files.map(item => item.contents), nb_topics, nb_terms);
+    const fileContent = files.filter(item => item.contents.length > 0).map(item => item.contents);
+    var ldaResults = lda(fileContent, nb_topics, nb_terms);
     var graph = {
       nodes: ldaResults.theta.map((theta, index) => {
         return {

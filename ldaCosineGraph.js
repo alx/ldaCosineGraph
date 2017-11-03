@@ -5,11 +5,11 @@ var nlp = require('wink-nlp-utils');
 var cosine = require('wink-distance').bow.cosine;
 
 const report_folder = 'reports/mescaline';
-const nb_topics = 10;
-const nb_terms = 5;
+const nb_topics = 12;
+const nb_terms = 20;
 // set to -1 to output all edges
-const min_weight = 0.7;
-const output_file = 'output/graph.json';
+const min_weight = -1;
+const output_file = 'output/mescaline.json';
 
 /**
  * Promise all
@@ -63,6 +63,7 @@ readFiles( report_folder )
 
     const fileContent = files.filter(item => item.contents.length > 0).map(item => item.contents);
     var ldaResults = lda(fileContent, nb_topics, nb_terms);
+    console.log(ldaResults.result);
     var graph = {
       nodes: ldaResults.theta.map((theta, index) => {
         return {
@@ -74,7 +75,8 @@ readFiles( report_folder )
           metadata: {theta: theta},
         };
       }),
-      edges: []
+      edges: [],
+      topics: ldaResults.result
     }
 
     let cosineNodes = graph.nodes;
@@ -105,6 +107,7 @@ readFiles( report_folder )
             id: 'e' + edge_id,
             source: nodeA.id,
             target: nodeB.id,
+            weight: weight,
           });
         }
 

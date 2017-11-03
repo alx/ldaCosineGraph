@@ -27,8 +27,14 @@ const output_file = 'graph.json';
 ## Run
 
 ```
-node ldaCosineGraph.js
+node ldaCosineGraph.js reports_folder_name
 ```
 
-Graph file will be available in the `output_file` target (`graph.json` by default).
+Graph file will be available in the `output_file` target (`reports_folder_name.json` by default).
+
+To run all reports subfolder at once:
+
+```
+for f in reports/*; do dir=${f%*/}; node ldaCosineGraph.js ${dir##*/} ; done
+```
 

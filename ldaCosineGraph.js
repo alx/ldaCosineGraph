@@ -68,12 +68,18 @@ function buildGraph(product_name) {
     var ldaResults = lda(fileContent, nb_topics, nb_terms);
     var graph = {
       nodes: ldaResults.theta.map((theta, index) => {
+        //console.log(files[index].filename);
+
+        let size = 1;
+        if(files[index].contents.length > 0)
+          size = files[index].contents.length;
+
         return {
           id: 'n' + index,
           label: files[index].filename,
           x: Math.random(),
           y: Math.random(),
-          size: files[index].contents.length,
+          size: size,
           metadata: {
             theta: theta,
           },
@@ -118,8 +124,15 @@ function buildGraph(product_name) {
       });
 
     });
+    //console.log(graph);
 
-    fs.writeFile(output_file, JSON.stringify(graph, null, 2));
+    fs.writeFile(output_file, JSON.stringify(graph, null, 2), (err) => {
+      if (err){
+        console.log(err);
+        throw err;
+      }
+      console.log(product_name + ' done');
+    })
   })
   .catch( error => {
       console.log( error );
@@ -127,14 +140,4 @@ function buildGraph(product_name) {
 
 }
 
-fs.readdir('reports', function (err, files) {
-  if (err) {
-    throw err;
-  }
-
-  files.filter(function (file) {
-    return fs.statSync('reports/' + file).isDirectory();
-  }).forEach(function (file) {
-    buildGraph(file);
-  });
-})
+buildGraph(process.argv[2]);

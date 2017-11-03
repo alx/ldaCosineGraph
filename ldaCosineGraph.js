@@ -69,11 +69,13 @@ function buildGraph(product_name) {
         nodes: ldaResults.theta.map((theta, index) => {
           return {
             id: 'n' + index,
-            label: 'n' + index,
+            label: files[index].filename,
             x: Math.random(),
             y: Math.random(),
-            size: 1,
-            metadata: {theta: theta},
+            size: files[index].contents.length,
+            metadata: {
+              theta: theta,
+            },
           };
         }),
         edges: [],

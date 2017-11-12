@@ -32,7 +32,7 @@ function ldaTweets() {
     .on("end", function() {
       console.log("ldaToGraph: " + tweets.length);
       options.labels = tweets.map(t => t.text);
-      options.metadata = tweets.map(t => {tweet_id: t.id});
+      options.metadata = tweets.map(t => {return {tweet_id: t.id};});
       ldaToGraph(tweets.map(t => t.text), options);
     });
 }

@@ -87,6 +87,8 @@ function readFiles(dirname) {
 
 function ldaToGraph(content, options) {
   var ldaResults = lda(content, options.nb_topics, options.nb_terms);
+  console.log('lda result available');
+  console.log(ldaResults.result);
   var graph = {
     nodes: ldaResults.theta.map((theta, index) => {
       //console.log(files[index].filename);
@@ -116,6 +118,18 @@ function ldaToGraph(content, options) {
 
   let cosineNodes = graph.nodes;
   let edge_id = 0;
+
+  console.log('write node output');
+
+  fs.writeFile('nodes_' + options.output_file, JSON.stringify(graph, null, 2), (err) => {
+    if (err){
+      console.log(err);
+      throw err;
+    }
+    console.log('nodes_' + options.output_file + ' done');
+  })
+
+  console.log('begin cosine similarity');
 
   graph.nodes.forEach(nodeA => {
 

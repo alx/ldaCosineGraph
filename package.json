@@ -4,7 +4,9 @@
   "main": "index.js",
   "license": "MIT",
   "dependencies": {
+    "fast-csv": "^2.4.1",
     "lda": "https://github.com/HCans/lda",
+    "papaparse": "^4.3.6",
     "wink-distance": "^1.3.0",
     "wink-nlp-utils": "^1.7.0"
   }

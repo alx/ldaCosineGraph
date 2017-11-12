@@ -3,6 +3,41 @@ var fs = require('fs');
 var lda = require('lda');
 var nlp = require('wink-nlp-utils');
 var cosine = require('wink-distance').bow.cosine;
+var csv = require('fast-csv');
+
+function ldaTweets() {
+
+  var tweets = [];
+  var options = {
+    nb_topics: 12,
+    nb_terms: 20,
+    min_weight: 0.9,
+    output_file: 'tweets.json'
+  };
+
+  var stream = fs.createReadStream(path.resolve("./reports", "tweets.csv"))
+    .pipe(csv.parse({headers: true}))
+    .transform(function (row) {
+      return {id: parseInt(row.id), text: row.text};
+    })
+    .on("readable", function () {
+      var row;
+      while (null !== (row = stream.read())) {
+        //console.log(row);
+        if(row.id && row.id > 0 && row.text && row.text.length > 0) {
+          tweets.push(row);
+        }
+      }
+    })
+    .on("end", function() {
+      console.log("ldaToGraph: " + tweets.length);
+      options.labels = tweets.map(t => t.text);
+      options.metadata = tweets.map(t => {tweet_id: t.id});
+      ldaToGraph(tweets.map(t => t.text), options);
+    });
+}
+
+ldaTweets();
 
 /**
  * Promise all
@@ -50,10 +85,84 @@ function readFiles(dirname) {
   });
 }
 
+function ldaToGraph(content, options) {
+  var ldaResults = lda(content, options.nb_topics, options.nb_terms);
+  var graph = {
+    nodes: ldaResults.theta.map((theta, index) => {
+      //console.log(files[index].filename);
+
+      let size = 1;
+      if(content[index].length > 0)
+        size = content[index].length;
+
+      let metadata = {};
+      if(options.metadata[index]) {
+        metadata = options.metadata[index];
+      }
+      metadata.theta = theta;
+
+      return {
+        id: 'n' + index,
+        label: options.labels[index],
+        x: Math.random(),
+        y: Math.random(),
+        size: size,
+        metadata: metadata
+      };
+    }),
+    edges: [],
+    topics: ldaResults.result
+  }
+
+  let cosineNodes = graph.nodes;
+  let edge_id = 0;
+
+  graph.nodes.forEach(nodeA => {
+
+    // Remove node on each pass
+    cosineNodes = cosineNodes.filter(nodeB => nodeA.id != nodeB.id);
+
+    cosineNodes.forEach(nodeB => {
+
+      const weight = cosine(
+        nodeA.metadata.theta.reduce(function(result, theta, index) {
+          result['topic' + index] = theta;
+          return result;
+        }, {}),
+        nodeB.metadata.theta.reduce(function(result, theta, index) {
+          result['topic' + index] = theta;
+          return result;
+        }, {})
+      );
+
+
+      if(weight > options.min_weight) {
+        edge_id += 1;
+        graph.edges.push({
+          id: 'e' + edge_id,
+          source: nodeA.id,
+          target: nodeB.id,
+          weight: weight,
+        });
+      }
+
+    });
+
+  });
+
+  fs.writeFile(options.output_file, JSON.stringify(graph, null, 2), (err) => {
+    if (err){
+      console.log(err);
+      throw err;
+    }
+    console.log(options.output_file + ' done');
+  })
+}
+
 function buildGraph(product_name) {
 
   const report_folder = 'reports/' + product_name;
-  const nb_topics = 12;
+  const nb_topics = 5;
   const nb_terms = 20;
   // set to -1 to output all edges
   const min_weight = -1;
@@ -140,4 +249,4 @@ function buildGraph(product_name) {
 
 }
 
-buildGraph(process.argv[2]);
+//buildGraph(process.argv[2]);
